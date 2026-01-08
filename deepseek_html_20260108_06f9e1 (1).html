@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Run - Survival Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Welcome Screen */
+        #welcome-screen {
+            text-align: center;
+        }
+
+        .game-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .game-subtitle {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            margin-bottom: 3rem;
+        }
+
+        .balance-display {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #fbbf24;
+            margin: 2rem 0;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+        }
+
+        .balance-label {
+            color: #cbd5e1;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .ugx-label {
+            color: #f59e0b;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Game Screen */
+        .game-header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .round-timer {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #10b981;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .game-canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        #game-canvas {
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls-info {
+            margin-top: 1rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* Round Selection */
+        #round-selection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .round-options {
+            display: flex;
+            gap: 2rem;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .round-option {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .round-option:hover {
+            transform: translateY(-5px);
+            border-color: #6366f1;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
+        }
+
+        .round-option.selected {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .round-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .round-multiplier {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #fbbf24;
+            margin: 1rem 0;
+        }
+
+        .round-time {
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Bid Section */
+        .bid-section {
+            margin-top: 2rem;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .bid-input-group {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .bid-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .bid-input:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        .bid-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #fbbf24;
+        }
+
+        .bid-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #6366f1, #4f46e5);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Result Screen */
+        .result-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            max-width: 500px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .win {
+            color: #10b981;
+        }
+
+        .lose {
+            color: #ef4444;
+        }
+
+        .result-details {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-row.highlight {
+            color: #10b981;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        /* Add Money Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .money-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .money-option {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .money-option:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #6366f1;
+        }
+
+        .money-option.selected {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: #6366f1;
+        }
+
+        /* Toast Messages */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: #ef4444;
+            color: white;
+            border-radius: 10px;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            background: #10b981;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .round-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .round-option {
+                max-width: 100%;
+            }
+            
+            .game-title {
+                font-size: 2.5rem;
+            }
+            
+            .balance-display {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="screen active">
+        <h1 class="game-title">NOVA RUN</h1>
+        <p class="game-subtitle">Survive to Multiply Your Money!</p>
+        
+        <div class="balance-display" id="balance-display">0</div>
+        <div class="balance-label">ACCOUNT BALANCE</div>
+        <div class="ugx-label">UGX</div>
+        
+        <div style="margin-top: 3rem;">
+            <button id="add-money-btn" class="btn btn-primary" style="margin-right: 1rem;">
+                <i class="fas fa-plus-circle"></i> ADD MONEY
+            </button>
+            <button id="start-game-btn" class="btn btn-primary">
+                <i class="fas fa-play"></i> PLAY GAME
+            </button>
+        </div>
+    </div>
+
+    <!-- Round Selection Screen -->
+    <div id="round-selection-screen" class="screen">
+        <h2 style="margin-bottom: 2rem;">SELECT ROUND</h2>
+        
+        <div class="round-options">
+            <div class="round-option" data-round="1">
+                <h3 class="round-title">
+                    <i class="fas fa-bolt"></i> SPEED RUN
+                </h3>
+                <div class="round-multiplier">×2</div>
+                <div class="round-time">1 Minute</div>
+                <p>Double your money by surviving for 1 minute</p>
+            </div>
+            
+            <div class="round-option" data-round="2">
+                <h3 class="round-title">
+                    <i class="fas fa-crown"></i> MARATHON
+                </h3>
+                <div class="round-multiplier">×2.5</div>
+                <div class="round-time">2 Minutes</div>
+                <p>2.5× multiplier for surviving 2 minutes</p>
+            </div>
+        </div>
+
+        <div class="bid-section">
+            <div class="bid-input-group">
+                <i class="fas fa-coins bid-icon"></i>
+                <input type="number" id="bid-amount" class="bid-input" 
+                       placeholder="Minimum: 500 UGX" min="500" step="100" value="500">
+            </div>
+            
+            <div class="bid-actions">
+                <button id="place-bid-btn" class="btn btn-primary">
+                    <i class="fas fa-hand-holding-usd"></i> PLACE BID
+                </button>
+                <button id="back-to-welcome" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> BACK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="game-header">
+            <div>
+                <div style="font-size: 0.9rem; color: #94a3b8;">BALANCE</div>
+                <div style="font-size: 1.5rem; color: #fbbf24;" id="game-balance">0 UGX</div>
+            </div>
+            
+            <div class="round-timer" id="round-timer">01:00</div>
+            
+            <div style="text-align: right;">
+                <div style="font-size: 0.9rem; color: #94a3b8;">BID AMOUNT</div>
+                <div style="font-size: 1.5rem; color: #10b981;" id="current-bid">0 UGX</div>
+            </div>
+        </div>
+        
+        <div class="game-canvas-container">
+            <canvas id="game-canvas"></canvas>
+        </div>
+        
+        <p class="controls-info">
+            Press SPACE or CLICK to jump • Avoid the obstacles to survive
+        </p>
+        
+        <button id="quit-game-btn" class="btn btn-secondary" style="margin-top: 2rem;">
+            <i class="fas fa-times"></i> QUIT GAME
+        </button>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="screen">
+        <div class="result-card">
+            <div class="result-icon" id="result-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <h2 id="result-title">VICTORY!</h2>
+            
+            <div class="result-details">
+                <div class="result-row">
+                    <span>Your Bid:</span>
+                    <span id="result-bid">0 UGX</span>
+                </div>
+                <div class="result-row">
+                    <span>Multiplier:</span>
+                    <span id="result-multiplier">×2</span>
+                </div>
+                <div class="result-row highlight">
+                    <span>You Won:</span>
+                    <span id="result-winnings">0 UGX</span>
+                </div>
+                <div class="result-row highlight">
+                    <span>New Balance:</span>
+                    <span id="result-new-balance">0 UGX</span>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button id="play-again-btn" class="btn btn-primary">
+                    <i class="fas fa-redo"></i> PLAY AGAIN
+                </button>
+                <button id="return-to-welcome" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> HOME
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Money Modal -->
+    <div id="add-money-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1rem; text-align: center;">
+                <i class="fas fa-wallet"></i> ADD MONEY
+            </h2>
+            <p style="text-align: center; color: #94a3b8; margin-bottom: 1.5rem;">
+                Select amount to add to your account
+            </p>
+            
+            <div class="money-options">
+                <div class="money-option" data-amount="500">500 UGX</div>
+                <div class="money-option" data-amount="1000">1,000 UGX</div>
+                <div class="money-option" data-amount="5000">5,000 UGX</div>
+                <div class="money-option" data-amount="10000">10,000 UGX</div>
+                <div class="money-option" data-amount="20000">20,000 UGX</div>
+                <div class="money-option" data-amount="50000">50,000 UGX</div>
+            </div>
+            
+            <div style="margin-top: 1.5rem;">
+                <div class="bid-input-group">
+                    <i class="fas fa-coins bid-icon"></i>
+                    <input type="number" id="custom-amount" class="bid-input" 
+                           placeholder="Custom amount" min="500" step="100">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button id="confirm-add-money" class="btn btn-primary" style="flex: 2;">
+                    <i class="fas fa-check"></i> ADD MONEY
+                </button>
+                <button id="cancel-add-money" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            balance: 0,
+            selectedRound: null,
+            bidAmount: 0,
+            gameActive: false,
+            roundTime: 0,
+            targetTime: 0,
+            roundTimer: null
+        };
+
+        // Game Objects - Character on same ground level as obstacles
+        const GROUND_LEVEL = 320; // Same level for character and obstacles
+        let runner = {
+            x: 50,
+            y: GROUND_LEVEL - 60, // Character stands on ground
+            width: 40,
+            height: 60,
+            velocityY: 0,
+            gravity: 0.8,
+            jumpPower: -18,
+            grounded: true,
+            color: '#4F46E5'
+        };
+
+        let obstacles = [];
+        let gameSpeed = 5;
+        let obstacleTimer = 0;
+        let lastTime = 0;
+
+        // DOM Elements
+        const screens = {
+            welcome: document.getElementById('welcome-screen'),
+            roundSelection: document.getElementById('round-selection-screen'),
+            game: document.getElementById('game-screen'),
+            result: document.getElementById('result-screen')
+        };
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Initialize Canvas
+        canvas.width = 800;
+        canvas.height = 400;
+
+        // Initialize Game
+        function initGame() {
+            // Add Money Modal
+            document.getElementById('add-money-btn').addEventListener('click', () => {
+                document.getElementById('add-money-modal').classList.add('active');
+            });
+
+            document.getElementById('cancel-add-money').addEventListener('click', () => {
+                document.getElementById('add-money-modal').classList.remove('active');
+            });
+
+            // Money Options (starting from 500 UGX)
+            document.querySelectorAll('.money-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.money-option').forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    document.getElementById('custom-amount').value = option.dataset.amount;
+                });
+            });
+
+            // Custom Amount
+            document.getElementById('custom-amount').addEventListener('input', (e) => {
+                document.querySelectorAll('.money-option').forEach(o => o.classList.remove('selected'));
+            });
+
+            // Confirm Add Money
+            document.getElementById('confirm-add-money').addEventListener('click', () => {
+                const amount = parseInt(document.getElementById('custom-amount').value);
+                if (amount >= 500) {
+                    gameState.balance += amount;
+                    updateBalanceDisplay();
+                    showToast(`Successfully added ${amount.toLocaleString()} UGX`, 'success');
+                    document.getElementById('add-money-modal').classList.remove('active');
+                } else {
+                    showToast('Minimum amount is 500 UGX', 'error');
+                }
+            });
+
+            // Start Game
+            document.getElementById('start-game-btn').addEventListener('click', () => {
+                if (gameState.balance < 500) {
+                    showToast('Minimum balance required: 500 UGX', 'error');
+                    return;
+                }
+                screens.welcome.classList.remove('active');
+                screens.roundSelection.classList.add('active');
+            });
+
+            // Round Selection
+            document.querySelectorAll('.round-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.round-option').forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    gameState.selectedRound = parseInt(option.dataset.round);
+                    
+                    // Set initial timer display
+                    const initialTime = gameState.selectedRound === 1 ? 60 : 120;
+                    const minutes = Math.floor(initialTime / 60);
+                    const seconds = initialTime % 60;
+                    document.getElementById('round-timer').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                });
+            });
+
+            // Back to Welcome
+            document.getElementById('back-to-welcome').addEventListener('click', () => {
+                screens.roundSelection.classList.remove('active');
+                screens.welcome.classList.add('active');
+            });
+
+            // Place Bid
+            document.getElementById('place-bid-btn').addEventListener('click', () => {
+                if (!gameState.selectedRound) {
+                    showToast('Please select a round first', 'error');
+                    return;
+                }
+
+                const bidAmount = parseInt(document.getElementById('bid-amount').value);
+                const minBid = 500; // Minimum bid is 500 UGX
+
+                if (!bidAmount || bidAmount < minBid) {
+                    showToast(`Minimum bid: ${minBid.toLocaleString()} UGX`, 'error');
+                    return;
+                }
+
+                if (bidAmount > gameState.balance) {
+                    showToast('Insufficient balance', 'error');
+                    return;
+                }
+
+                gameState.bidAmount = bidAmount;
+                gameState.balance -= bidAmount;
+                updateBalanceDisplay();
+
+                // Start game
+                screens.roundSelection.classList.remove('active');
+                screens.game.classList.add('active');
+                startGame();
+            });
+
+            // Quit Game
+            document.getElementById('quit-game-btn').addEventListener('click', () => {
+                if (confirm('Are you sure you want to quit? You will lose your bid.')) {
+                    endGame(false);
+                }
+            });
+
+            // Play Again
+            document.getElementById('play-again-btn').addEventListener('click', () => {
+                screens.result.classList.remove('active');
+                screens.welcome.classList.add('active');
+            });
+
+            // Return to Welcome
+            document.getElementById('return-to-welcome').addEventListener('click', () => {
+                screens.result.classList.remove('active');
+                screens.welcome.classList.add('active');
+            });
+
+            // Keyboard Controls
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && gameState.gameActive) {
+                    jump();
+                }
+            });
+
+            // Click/Touch Controls
+            canvas.addEventListener('click', () => {
+                if (gameState.gameActive) {
+                    jump();
+                }
+            });
+
+            // Initialize balance display
+            updateBalanceDisplay();
+        }
+
+        // Game Functions
+        function startGame() {
+            gameState.gameActive = true;
+            gameState.roundTime = 0;
+            gameState.targetTime = gameState.selectedRound === 1 ? 60000 : 120000; // 1 or 2 minutes
+            
+            // Reset game objects
+            runner.y = GROUND_LEVEL - runner.height;
+            runner.velocityY = 0;
+            obstacles = [];
+            gameSpeed = 5;
+            obstacleTimer = 0;
+            
+            // Update UI
+            document.getElementById('game-balance').textContent = gameState.balance.toLocaleString() + ' UGX';
+            document.getElementById('current-bid').textContent = gameState.bidAmount.toLocaleString() + ' UGX';
+            
+            // Start game loop
+            lastTime = Date.now();
+            requestAnimationFrame(gameLoop);
+            
+            // Start round timer
+            if (gameState.roundTimer) {
+                clearInterval(gameState.roundTimer);
+            }
+            
+            gameState.roundTimer = setInterval(() => {
+                if (!gameState.gameActive) return;
+                
+                gameState.roundTime += 1000;
+                const remaining = Math.max(0, gameState.targetTime - gameState.roundTime);
+                const seconds = Math.floor(remaining / 1000);
+                const minutes = Math.floor(seconds / 60);
+                
+                const displaySeconds = (seconds % 60).toString().padStart(2, '0');
+                const displayMinutes = minutes.toString().padStart(2, '0');
+                
+                document.getElementById('round-timer').textContent = `${displayMinutes}:${displaySeconds}`;
+                
+                // Check if time is up (player wins)
+                if (gameState.roundTime >= gameState.targetTime) {
+                    endGame(true);
+                }
+            }, 1000);
+        }
+
+        function gameLoop() {
+            if (!gameState.gameActive) return;
+            
+            const currentTime = Date.now();
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            
+            update(deltaTime);
+            draw();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update(deltaTime) {
+            // Update runner physics
+            runner.velocityY += runner.gravity;
+            runner.y += runner.velocityY;
+            
+            // Ground collision - character stays on same level as obstacles
+            if (runner.y > GROUND_LEVEL - runner.height) {
+                runner.y = GROUND_LEVEL - runner.height;
+                runner.velocityY = 0;
+                runner.grounded = true;
+            } else {
+                runner.grounded = false;
+            }
+            
+            // Increase game speed over time
+            const progress = gameState.roundTime / gameState.targetTime;
+            gameSpeed = 5 + progress * 15;
+            
+            // Generate obstacles at same ground level
+            obstacleTimer += deltaTime;
+            const obstacleInterval = Math.max(800, 2000 - (progress * 1500));
+            
+            if (obstacleTimer > obstacleInterval) {
+                obstacleTimer = 0;
+                
+                // Create different types of obstacles
+                const obstacleTypes = [
+                    { width: 25, height: 50, color: '#EF4444' }, // Small
+                    { width: 30, height: 70, color: '#DC2626' }, // Medium
+                    { width: 40, height: 100, color: '#B91C1C' }  // Large
+                ];
+                
+                const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+                
+                obstacles.push({
+                    x: canvas.width,
+                    y: GROUND_LEVEL - type.height, // Same ground level as runner
+                    width: type.width,
+                    height: type.height,
+                    speed: gameSpeed,
+                    color: type.color,
+                    type: type === obstacleTypes[0] ? 'small' : 
+                          type === obstacleTypes[1] ? 'medium' : 'large'
+                });
+            }
+            
+            // Update obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.x -= obs.speed;
+                
+                // Collision detection
+                if (checkCollision(runner, obs)) {
+                    endGame(false);
+                    return;
+                }
+                
+                // Remove off-screen obstacles
+                if (obs.x + obs.width < 0) {
+                    obstacles.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw sky
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#1e3c72');
+            gradient.addColorStop(1, '#2a5298');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw ground (same level for character and obstacles)
+            ctx.fillStyle = '#059669';
+            ctx.fillRect(0, GROUND_LEVEL, canvas.width, canvas.height - GROUND_LEVEL);
+            
+            // Draw ground texture
+            ctx.fillStyle = '#047857';
+            for (let i = 0; i < canvas.width; i += 30) {
+                ctx.fillRect(i, GROUND_LEVEL, 15, 5);
+            }
+            
+            // Draw runner (character)
+            drawRunner();
+            
+            // Draw obstacles
+            drawObstacles();
+            
+            // Draw time progress bar
+            const progress = Math.min(gameState.roundTime / gameState.targetTime, 1);
+            ctx.fillStyle = '#10b981';
+            ctx.fillRect(20, 20, (canvas.width - 40) * progress, 10);
+            
+            // Draw border around progress bar
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(20, 20, canvas.width - 40, 10);
+            
+            // Draw time remaining text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(`TIME REMAINING`, canvas.width - 180, 30);
+        }
+
+        function drawRunner() {
+            // Draw runner body
+            ctx.fillStyle = runner.color;
+            ctx.fillRect(runner.x, runner.y, runner.width, runner.height);
+            
+            // Draw runner details
+            ctx.fillStyle = '#3730A3';
+            
+            // Head
+            ctx.fillRect(runner.x + 10, runner.y + 5, 20, 20);
+            
+            // Eyes
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(runner.x + 15, runner.y + 10, 5, 5);
+            ctx.fillRect(runner.x + 25, runner.y + 10, 5, 5);
+            
+            // Body
+            ctx.fillStyle = runner.color;
+            ctx.fillRect(runner.x + 5, runner.y + 25, runner.width - 10, 20);
+            
+            // Legs (position changes based on jump)
+            const legOffset = runner.grounded ? 0 : Math.sin(Date.now() * 0.01) * 3;
+            ctx.fillRect(runner.x + 10, runner.y + runner.height - 15, 8, 15 + legOffset);
+            ctx.fillRect(runner.x + runner.width - 18, runner.y + runner.height - 15, 8, 15 - legOffset);
+        }
+
+        function drawObstacles() {
+            obstacles.forEach(obs => {
+                // Draw obstacle body
+                ctx.fillStyle = obs.color;
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                
+                // Draw obstacle details based on type
+                ctx.fillStyle = obs.type === 'small' ? '#FCA5A5' :
+                               obs.type === 'medium' ? '#F87171' : '#EF4444';
+                
+                // Top of obstacle
+                ctx.fillRect(obs.x + 3, obs.y + 3, obs.width - 6, 10);
+                
+                // Pattern on obstacle
+                for (let i = 0; i < obs.height - 15; i += 15) {
+                    ctx.fillRect(obs.x + 5, obs.y + 15 + i, obs.width - 10, 5);
+                }
+                
+                // Shadow at base (same ground level)
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(obs.x, GROUND_LEVEL, obs.width, 5);
+            });
+        }
+
+        function jump() {
+            if (!runner.grounded) return;
+            
+            runner.velocityY = runner.jumpPower;
+            runner.grounded = false;
+        }
+
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        function endGame(isWin) {
+            gameState.gameActive = false;
+            
+            if (gameState.roundTimer) {
+                clearInterval(gameState.roundTimer);
+                gameState.roundTimer = null;
+            }
+            
+            let winnings = 0;
+            if (isWin) {
+                const multiplier = gameState.selectedRound === 1 ? 2 : 2.5;
+                winnings = Math.floor(gameState.bidAmount * multiplier);
+                gameState.balance += winnings;
+                
+                // Update UI for win
+                document.getElementById('result-icon').innerHTML = '<i class="fas fa-trophy"></i>';
+                document.getElementById('result-icon').className = 'result-icon win';
+                document.getElementById('result-title').textContent = 'VICTORY!';
+                document.getElementById('result-title').style.color = '#10b981';
+            } else {
+                // Update UI for loss
+                document.getElementById('result-icon').innerHTML = '<i class="fas fa-times"></i>';
+                document.getElementById('result-icon').className = 'result-icon lose';
+                document.getElementById('result-title').textContent = 'GAME OVER';
+                document.getElementById('result-title').style.color = '#ef4444';
+            }
+            
+            // Update result screen
+            document.getElementById('result-bid').textContent = gameState.bidAmount.toLocaleString() + ' UGX';
+            document.getElementById('result-multiplier').textContent = 
+                gameState.selectedRound === 1 ? '×2' : '×2.5';
+            document.getElementById('result-winnings').textContent = isWin ? winnings.toLocaleString() + ' UGX' : '0 UGX';
+            document.getElementById('result-new-balance').textContent = gameState.balance.toLocaleString() + ' UGX';
+            
+            // Update balance display
+            updateBalanceDisplay();
+            
+            // Show result screen
+            screens.game.classList.remove('active');
+            screens.result.classList.add('active');
+        }
+
+        function updateBalanceDisplay() {
+            document.getElementById('balance-display').textContent = gameState.balance.toLocaleString();
+        }
+
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                background: ${type === 'error' ? '#ef4444' : '#10b981'};
+                color: white;
+                border-radius: 10px;
+                z-index: 1001;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
