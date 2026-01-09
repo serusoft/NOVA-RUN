@@ -1280,7 +1280,7 @@
             updateBalanceDisplay();
         }
 
-        // Game Functions (same as before)
+        // Game Functions with improved speed progression
         function startGame() {
             gameState.gameActive = true;
             gameState.roundTime = 0;
@@ -1289,7 +1289,7 @@
             runner.y = GROUND_LEVEL - runner.height;
             runner.velocityY = 0;
             obstacles = [];
-            gameSpeed = 5;
+            gameSpeed = 5; // Start at base speed
             obstacleTimer = 0;
             
             document.getElementById('game-balance').textContent = gameState.balance.toLocaleString() + ' UGX';
@@ -1346,11 +1346,22 @@
                 runner.grounded = false;
             }
             
+            // IMPROVED: Smoother speed progression that doesn't get too fast
             const progress = gameState.roundTime / gameState.targetTime;
-            gameSpeed = 5 + progress * 15;
+            
+            // Use easing function for smoother progression
+            // Ease-out cubic: https://easings.net/#easeOutCubic
+            const easedProgress = 1 - Math.pow(1 - progress, 3);
+            
+            // Maximum speed is now 10 (instead of 20) for better playability
+            gameSpeed = 5 + (easedProgress * 5); // Slower progression: from 5 to 10 max
             
             obstacleTimer += deltaTime;
-            const obstacleInterval = Math.max(800, 2000 - (progress * 1500));
+            
+            // IMPROVED: More reasonable obstacle intervals
+            // Minimum interval is now 600ms (instead of 800ms) for better pacing
+            // Maximum interval is 2500ms
+            const obstacleInterval = Math.max(600, 2500 - (easedProgress * 1900));
             
             if (obstacleTimer > obstacleInterval) {
                 obstacleTimer = 0;
@@ -1361,7 +1372,21 @@
                     { width: 40, height: 100, color: '#B91C1C' }
                 ];
                 
-                const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+                // Weight the obstacles - more small ones early, more large ones late
+                let obstacleTypeIndex;
+                if (progress < 0.3) {
+                    // Early game: mostly small obstacles (70% small, 30% medium)
+                    obstacleTypeIndex = Math.random() < 0.7 ? 0 : 1;
+                } else if (progress < 0.7) {
+                    // Mid game: mix of all types
+                    obstacleTypeIndex = Math.floor(Math.random() * obstacleTypes.length);
+                } else {
+                    // Late game: fewer small obstacles (20% small, 40% medium, 40% large)
+                    const rand = Math.random();
+                    obstacleTypeIndex = rand < 0.2 ? 0 : rand < 0.6 ? 1 : 2;
+                }
+                
+                const type = obstacleTypes[obstacleTypeIndex];
                 
                 obstacles.push({
                     x: canvas.width,
@@ -1370,8 +1395,8 @@
                     height: type.height,
                     speed: gameSpeed,
                     color: type.color,
-                    type: type === obstacleTypes[0] ? 'small' : 
-                          type === obstacleTypes[1] ? 'medium' : 'large'
+                    type: obstacleTypeIndex === 0 ? 'small' : 
+                          obstacleTypeIndex === 1 ? 'medium' : 'large'
                 });
             }
             
