@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nova Run - Survival Game</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase CDN (compatible version) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
     <style>
         * {
             margin: 0;
@@ -18,16 +23,12 @@
             color: white;
             min-height: 100vh;
             overflow-x: hidden;
-            touch-action: manipulation;
         }
 
         .screen {
             display: none;
             min-height: 100vh;
             padding: 20px;
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
         }
 
         .screen.active {
@@ -38,28 +39,51 @@
         }
 
         /* Login Screen */
-        #login-screen {
-            max-width: 500px;
-        }
-
-        .login-container {
+        .auth-container {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 20px;
-            padding: 2.5rem;
-            width: 100%;
+            padding: 3rem;
+            max-width: 400px;
+            width: 90%;
             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .auth-tab.active {
+            opacity: 1;
+            border-bottom: 2px solid #6366f1;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
         }
 
         .form-group {
             margin-bottom: 1.5rem;
-            position: relative;
         }
 
-        .form-label {
+        .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #cbd5e1;
-            font-weight: 500;
+            color: #94a3b8;
         }
 
         .form-input {
@@ -70,7 +94,6 @@
             border-radius: 10px;
             color: white;
             font-size: 1rem;
-            font-weight: 500;
         }
 
         .form-input:focus {
@@ -78,97 +101,15 @@
             border-color: #6366f1;
         }
 
-        .form-icon {
-            position: absolute;
-            right: 1rem;
-            top: 2.7rem;
-            color: #94a3b8;
-        }
-
-        .login-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
         /* Welcome Screen */
-        .currency-display {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            width: 100%;
-            max-width: 800px;
-            margin: 2rem 0;
-        }
-
-        @media (min-width: 768px) {
-            .currency-display {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        .currency-note {
-            position: relative;
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-radius: 15px;
-            padding: 1.5rem 1rem;
-            text-align: center;
-            transform: rotate(-5deg);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-            border: 2px solid #d97706;
-            transition: transform 0.3s ease;
-            cursor: pointer;
-            min-height: 150px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .currency-note:nth-child(even) {
-            transform: rotate(5deg);
-        }
-
-        .currency-note:hover {
-            transform: rotate(0deg) scale(1.05);
-        }
-
-        .currency-note:nth-child(even):hover {
-            transform: rotate(0deg) scale(1.05);
-        }
-
-        .note-value {
-            font-size: 2rem;
+        .game-title {
+            font-size: 4rem;
             font-weight: 900;
-            color: #92400e;
-            margin-bottom: 0.5rem;
-        }
-
-        .note-label {
-            color: #78350f;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .note-ugx {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 0.8rem;
-            color: #92400e;
-            font-weight: 700;
-        }
-
-        .note-watermark {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            font-size: 2rem;
-            opacity: 0.2;
-            color: #92400e;
-            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
 
         .user-info {
@@ -177,33 +118,34 @@
             right: 20px;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 1rem;
             background: rgba(255, 255, 255, 0.05);
             padding: 0.5rem 1rem;
-            border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
         }
 
-        .user-avatar {
-            width: 30px;
-            height: 30px;
-            background: linear-gradient(45deg, #6366f1, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .user-welcome {
+            color: #cbd5e1;
         }
 
-        .logout-btn {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-            padding: 0.25rem;
+        .balance-display {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #fbbf24;
+            margin: 2rem 0;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
         }
 
-        .logout-btn:hover {
-            color: #ef4444;
+        .balance-label {
+            color: #cbd5e1;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .ugx-label {
+            color: #f59e0b;
+            font-size: 1rem;
+            margin-top: 0.5rem;
         }
 
         /* Game Screen */
@@ -218,7 +160,6 @@
             border-radius: 15px;
             margin-bottom: 1rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            flex-wrap: wrap;
         }
 
         .round-timer {
@@ -228,26 +169,21 @@
             text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
         }
 
-        @media (max-width: 600px) {
-            .round-timer {
-                font-size: 2rem;
-                order: -1;
-                width: 100%;
-                text-align: center;
-                margin-bottom: 1rem;
-            }
-            
-            .game-header {
-                flex-direction: column;
-                gap: 1rem;
-            }
+        .game-code-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            color: #fbbf24;
         }
 
         .game-canvas-container {
             position: relative;
             width: 100%;
             max-width: 800px;
-            margin: 0 auto;
         }
 
         #game-canvas {
@@ -259,38 +195,10 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
 
-        .mobile-controls {
-            display: none;
-            margin-top: 2rem;
-            width: 100%;
-            max-width: 800px;
-        }
-
-        @media (max-width: 768px) {
-            .mobile-controls {
-                display: flex;
-                justify-content: center;
-            }
-        }
-
-        .jump-button {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #6366f1, #4f46e5);
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.1s ease;
-        }
-
-        .jump-button:active {
-            transform: scale(0.95);
+        .controls-info {
+            margin-top: 1rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
         }
 
         /* Round Selection */
@@ -308,7 +216,6 @@
             gap: 2rem;
             width: 100%;
             justify-content: center;
-            flex-wrap: wrap;
         }
 
         .round-option {
@@ -320,7 +227,6 @@
             transition: all 0.3s ease;
             cursor: pointer;
             flex: 1;
-            min-width: 280px;
             max-width: 300px;
         }
 
@@ -406,8 +312,6 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            touch-action: manipulation;
-            user-select: none;
         }
 
         .btn-primary {
@@ -428,11 +332,6 @@
 
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-large {
-            padding: 1.2rem 2rem;
-            font-size: 1.2rem;
         }
 
         /* Result Screen */
@@ -482,7 +381,7 @@
             font-size: 1.2rem;
         }
 
-        /* Add Money Modal */
+        /* View Code Modal */
         .modal {
             display: none;
             position: fixed;
@@ -495,7 +394,6 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            padding: 20px;
         }
 
         .modal.active {
@@ -507,37 +405,21 @@
             border-radius: 20px;
             padding: 2rem;
             max-width: 400px;
-            width: 100%;
+            width: 90%;
             border: 1px solid rgba(99, 102, 241, 0.3);
-            max-height: 90vh;
-            overflow-y: auto;
         }
 
-        .money-options {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin: 1.5rem 0;
-        }
-
-        .money-option {
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.1);
+        .code-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2rem;
             border-radius: 10px;
             text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-
-        .money-option:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: #6366f1;
-        }
-
-        .money-option.selected {
-            background: rgba(99, 102, 241, 0.2);
-            border-color: #6366f1;
+            margin: 1.5rem 0;
+            font-family: monospace;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
         }
 
         /* Toast Messages */
@@ -551,7 +433,6 @@
             border-radius: 10px;
             z-index: 1001;
             animation: slideIn 0.3s ease;
-            max-width: 90%;
         }
 
         .toast.success {
@@ -580,139 +461,73 @@
             }
         }
 
-        /* Game Title */
-        .game-title {
-            font-size: 4rem;
-            font-weight: 900;
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, #6366f1, #8b5cf6);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-align: center;
-        }
-
+        /* Responsive */
         @media (max-width: 768px) {
+            .round-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .round-option {
+                max-width: 100%;
+            }
+            
             .game-title {
                 font-size: 2.5rem;
             }
             
-            .result-card {
-                padding: 2rem;
-            }
-            
-            .currency-note {
-                min-height: 120px;
-                padding: 1rem 0.5rem;
-            }
-            
-            .note-value {
-                font-size: 1.5rem;
-            }
-        }
-
-        /* Balance Display */
-        .balance-display {
-            font-size: 4rem;
-            font-weight: 700;
-            color: #fbbf24;
-            margin: 2rem 0;
-            text-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
-            text-align: center;
-        }
-
-        @media (max-width: 768px) {
             .balance-display {
                 font-size: 2.5rem;
             }
-        }
-
-        .balance-label {
-            color: #cbd5e1;
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-            text-align: center;
-        }
-
-        .ugx-label {
-            color: #f59e0b;
-            font-size: 1rem;
-            margin-top: 0.5rem;
-            text-align: center;
-        }
-
-        /* Switch between Login/Register */
-        .auth-switch {
-            text-align: center;
-            margin-top: 1.5rem;
-            color: #94a3b8;
-        }
-
-        .auth-switch a {
-            color: #6366f1;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .auth-switch a:hover {
-            text-decoration: underline;
+            
+            .user-info {
+                position: static;
+                margin-bottom: 2rem;
+            }
         }
     </style>
 </head>
 <body>
     <!-- Login/Signup Screen -->
-    <div id="login-screen" class="screen active">
-        <h1 class="game-title">NOVA RUN</h1>
-        <p style="text-align: center; color: #94a3b8; margin-bottom: 2rem;">Sign up or login to start playing</p>
+    <div id="auth-screen" class="screen active">
+        <h1 class="game-title" style="margin-bottom: 2rem;">NOVA RUN</h1>
         
-        <div class="login-container">
-            <div id="login-form">
-                <h2 style="margin-bottom: 1.5rem; text-align: center;">LOGIN</h2>
-                <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input type="text" id="login-username" class="form-input" placeholder="Enter your username">
-                    <i class="fas fa-user form-icon"></i>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" id="login-password" class="form-input" placeholder="Enter your password">
-                    <i class="fas fa-lock form-icon"></i>
-                </div>
-                <div class="login-options">
-                    <button id="login-btn" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt"></i> LOGIN
-                    </button>
-                    <div class="auth-switch">
-                        Don't have an account? <a href="#" id="show-register">Sign Up</a>
-                    </div>
-                </div>
+        <div class="auth-container">
+            <div class="auth-tabs">
+                <div class="auth-tab active" data-tab="login">LOGIN</div>
+                <div class="auth-tab" data-tab="signup">SIGN UP</div>
             </div>
             
-            <div id="register-form" style="display: none;">
-                <h2 style="margin-bottom: 1.5rem; text-align: center;">SIGN UP</h2>
+            <div id="login-form" class="auth-form active">
                 <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input type="text" id="register-username" class="form-input" placeholder="Choose a username">
-                    <i class="fas fa-user form-icon"></i>
+                    <label>Username</label>
+                    <input type="text" id="login-username" class="form-input" placeholder="Enter your username">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" id="register-password" class="form-input" placeholder="Create a password">
-                    <i class="fas fa-lock form-icon"></i>
+                    <label>Password</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="Enter your password">
+                </div>
+                <button id="login-btn" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> LOGIN
+                </button>
+            </div>
+            
+            <div id="signup-form" class="auth-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="signup-username" class="form-input" placeholder="Choose a username">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Confirm Password</label>
-                    <input type="password" id="register-confirm" class="form-input" placeholder="Confirm your password">
-                    <i class="fas fa-lock form-icon"></i>
+                    <label>Password</label>
+                    <input type="password" id="signup-password" class="form-input" placeholder="Choose a password">
                 </div>
-                <div class="login-options">
-                    <button id="register-btn" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i> SIGN UP
-                    </button>
-                    <div class="auth-switch">
-                        Already have an account? <a href="#" id="show-login">Login</a>
-                    </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="signup-confirm-password" class="form-input" placeholder="Confirm password">
                 </div>
+                <button id="signup-btn" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-user-plus"></i> CREATE ACCOUNT
+                </button>
             </div>
         </div>
     </div>
@@ -720,54 +535,27 @@
     <!-- Welcome Screen -->
     <div id="welcome-screen" class="screen">
         <div class="user-info">
-            <div class="user-avatar">
-                <i class="fas fa-user"></i>
-            </div>
-            <span id="logged-in-user">Guest</span>
-            <button class="logout-btn" id="logout-btn" title="Logout">
-                <i class="fas fa-sign-out-alt"></i>
+            <span class="user-welcome">Welcome, <span id="username-display"></span></span>
+            <button id="logout-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
+                <i class="fas fa-sign-out-alt"></i> LOGOUT
             </button>
         </div>
         
         <h1 class="game-title">NOVA RUN</h1>
-        <p class="game-subtitle" style="color: #94a3b8; margin-bottom: 1rem; text-align: center;">Survive to Multiply Your Money!</p>
-        
-        <div class="currency-display">
-            <div class="currency-note">
-                <div class="note-ugx">UGX</div>
-                <div class="note-value">50,000</div>
-                <div class="note-label">Fifty Thousand Shillings</div>
-                <div class="note-watermark">50K</div>
-            </div>
-            <div class="currency-note">
-                <div class="note-ugx">UGX</div>
-                <div class="note-value">20,000</div>
-                <div class="note-label">Twenty Thousand Shillings</div>
-                <div class="note-watermark">20K</div>
-            </div>
-            <div class="currency-note">
-                <div class="note-ugx">UGX</div>
-                <div class="note-value">10,000</div>
-                <div class="note-label">Ten Thousand Shillings</div>
-                <div class="note-watermark">10K</div>
-            </div>
-            <div class="currency-note">
-                <div class="note-ugx">UGX</div>
-                <div class="note-value">5,000</div>
-                <div class="note-label">Five Thousand Shillings</div>
-                <div class="note-watermark">5K</div>
-            </div>
-        </div>
+        <p class="game-subtitle">Survive to Multiply Your Money!</p>
         
         <div class="balance-display" id="balance-display">0</div>
         <div class="balance-label">ACCOUNT BALANCE</div>
-        <div class="ugx-label">UGANDA SHILLINGS</div>
+        <div class="ugx-label">UGX</div>
         
-        <div style="margin-top: 3rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-            <button id="add-money-btn" class="btn btn-primary btn-large">
-                <i class="fas fa-plus-circle"></i> ADD MONEY
+        <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+            <button id="view-code-btn" class="btn btn-primary">
+                <i class="fas fa-eye"></i> VIEW YOUR CODE
             </button>
-            <button id="start-game-btn" class="btn btn-primary btn-large">
+        </div>
+        
+        <div style="margin-top: 3rem;">
+            <button id="start-game-btn" class="btn btn-primary">
                 <i class="fas fa-play"></i> PLAY GAME
             </button>
         </div>
@@ -775,7 +563,7 @@
 
     <!-- Round Selection Screen -->
     <div id="round-selection-screen" class="screen">
-        <h2 style="margin-bottom: 2rem; text-align: center;">SELECT ROUND</h2>
+        <h2 style="margin-bottom: 2rem;">SELECT ROUND</h2>
         
         <div class="round-options">
             <div class="round-option" data-round="1">
@@ -817,6 +605,8 @@
 
     <!-- Game Screen -->
     <div id="game-screen" class="screen">
+        <div class="game-code-display" id="game-code-display"></div>
+        
         <div class="game-header">
             <div>
                 <div style="font-size: 0.9rem; color: #94a3b8;">BALANCE</div>
@@ -835,15 +625,9 @@
             <canvas id="game-canvas"></canvas>
         </div>
         
-        <p class="controls-info" style="color: #94a3b8; margin-top: 1rem; text-align: center;">
+        <p class="controls-info">
             Press SPACE or CLICK to jump • Avoid the obstacles to survive
         </p>
-        
-        <div class="mobile-controls">
-            <button class="jump-button" id="mobile-jump-btn">
-                <i class="fas fa-arrow-up"></i>
-            </button>
-        </div>
         
         <button id="quit-game-btn" class="btn btn-secondary" style="margin-top: 2rem;">
             <i class="fas fa-times"></i> QUIT GAME
@@ -877,7 +661,7 @@
                 </div>
             </div>
             
-            <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                 <button id="play-again-btn" class="btn btn-primary">
                     <i class="fas fa-redo"></i> PLAY AGAIN
                 </button>
@@ -888,47 +672,62 @@
         </div>
     </div>
 
-    <!-- Add Money Modal -->
-    <div id="add-money-modal" class="modal">
+    <!-- View Code Modal -->
+    <div id="view-code-modal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 1rem; text-align: center;">
-                <i class="fas fa-wallet"></i> ADD MONEY
+                <i class="fas fa-key"></i> VIEW YOUR UNIQUE CODE
             </h2>
-            <p style="text-align: center; color: #94a3b8; margin-bottom: 1.5rem;">
-                Select amount to add to your account
+            <p style="text-align: center; color: #94a3b8; margin-bottom: 1rem;">
+                Enter your password to view your unique code
             </p>
             
-            <div class="money-options">
-                <div class="money-option" data-amount="500">500 UGX</div>
-                <div class="money-option" data-amount="1000">1,000 UGX</div>
-                <div class="money-option" data-amount="5000">5,000 UGX</div>
-                <div class="money-option" data-amount="10000">10,000 UGX</div>
-                <div class="money-option" data-amount="20000">20,000 UGX</div>
-                <div class="money-option" data-amount="50000">50,000 UGX</div>
+            <div class="form-group">
+                <input type="password" id="code-password" class="form-input" 
+                       placeholder="Enter your password">
             </div>
             
-            <div style="margin-top: 1.5rem;">
-                <div class="bid-input-group">
-                    <i class="fas fa-coins bid-icon"></i>
-                    <input type="number" id="custom-amount" class="bid-input" 
-                           placeholder="Custom amount" min="500" step="100">
-                </div>
+            <div id="code-display-container" style="display: none;">
+                <p style="color: #94a3b8; margin-bottom: 0.5rem;">Your Unique Code:</p>
+                <div class="code-display" id="unique-code-display"></div>
+                <p style="color: #ef4444; font-size: 0.9rem; text-align: center; margin-top: 1rem;">
+                    <i class="fas fa-exclamation-triangle"></i> Save this code! You won't be able to view it again.
+                </p>
             </div>
             
             <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                <button id="confirm-add-money" class="btn btn-primary" style="flex: 2;">
-                    <i class="fas fa-check"></i> ADD MONEY
+                <button id="verify-password-btn" class="btn btn-primary" style="flex: 2;">
+                    <i class="fas fa-check"></i> VERIFY PASSWORD
                 </button>
-                <button id="cancel-add-money" class="btn btn-secondary">
-                    <i class="fas fa-times"></i>
+                <button id="close-code-modal" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> CLOSE
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // Game State with User Management
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQQIIv6DulLOxYocOkF615V4wzpEpcwoE",
+            authDomain: "nova-run.firebaseapp.com",
+            projectId: "nova-run",
+            storageBucket: "nova-run.firebasestorage.app",
+            messagingSenderId: "972111449434",
+            appId: "1:972111449434:web:dd878922586d03fad8f763",
+            measurementId: "G-LX1WQ3D3X6"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const analytics = firebase.analytics();
+
+        // Game State
         let gameState = {
+            currentUser: null,
+            userData: null,
             balance: 0,
             selectedRound: null,
             bidAmount: 0,
@@ -936,45 +735,9 @@
             roundTime: 0,
             targetTime: 0,
             roundTimer: null,
-            currentUser: null,
-            users: {} // In a real app, this would be on a server
+            uniqueCode: null,
+            codeViewed: false
         };
-
-        // Load users from localStorage
-        function loadUsers() {
-            const stored = localStorage.getItem('novaRunUsers');
-            if (stored) {
-                gameState.users = JSON.parse(stored);
-            }
-        }
-
-        // Save users to localStorage
-        function saveUsers() {
-            localStorage.setItem('novaRunUsers', JSON.stringify(gameState.users));
-        }
-
-        // Save current user data
-        function saveUserData() {
-            if (gameState.currentUser) {
-                gameState.users[gameState.currentUser] = {
-                    balance: gameState.balance,
-                    lastLogin: new Date().toISOString()
-                };
-                saveUsers();
-            }
-        }
-
-        // Load current user data
-        function loadUserData(username) {
-            if (gameState.users[username]) {
-                gameState.balance = gameState.users[username].balance || 0;
-            } else {
-                gameState.balance = 0; // New user starts with 0
-            }
-            gameState.currentUser = username;
-            document.getElementById('logged-in-user').textContent = username;
-            updateBalanceDisplay();
-        }
 
         // Game Objects
         const GROUND_LEVEL = 320;
@@ -997,7 +760,7 @@
 
         // DOM Elements
         const screens = {
-            login: document.getElementById('login-screen'),
+            auth: document.getElementById('auth-screen'),
             welcome: document.getElementById('welcome-screen'),
             roundSelection: document.getElementById('round-selection-screen'),
             game: document.getElementById('game-screen'),
@@ -1011,54 +774,183 @@
         canvas.width = 800;
         canvas.height = 400;
 
+        // Generate Unique Code
+        function generateUniqueCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 8; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        // Get Game Difficulty Code
+        async function getGameDifficultyCode() {
+            try {
+                const settingsDoc = await db.collection('gameSettings').doc('difficulty').get();
+                if (settingsDoc.exists) {
+                    const difficulty = settingsDoc.data().value;
+                    
+                    const difficulties = {
+                        hard: ['hard', 'hard', 'medium'],
+                        medium: ['medium', 'medium', 'easy', 'medium', 'hard'],
+                        easy: ['easy', 'easy', 'easy', 'medium']
+                    };
+                    
+                    const options = difficulties[difficulty] || difficulties.medium;
+                    const randomIndex = Math.floor(Math.random() * options.length);
+                    const actualDifficulty = options[randomIndex];
+                    
+                    // Generate code based on difficulty
+                    const codes = {
+                        hard: '00HQJ',
+                        medium: '00MQJ',
+                        easy: '00SQJ'
+                    };
+                    
+                    return codes[actualDifficulty] || '00MQJ';
+                } else {
+                    // Create default difficulty setting if it doesn't exist
+                    await db.collection('gameSettings').doc('difficulty').set({
+                        value: 'medium',
+                        updatedAt: new Date().toISOString(),
+                        updatedBy: 'system'
+                    });
+                    return '00MQJ';
+                }
+            } catch (error) {
+                console.error('Error getting game difficulty:', error);
+                return '00MQJ';
+            }
+        }
+
         // Initialize Game
         function initGame() {
-            loadUsers();
-            
-            // Show Register Form
-            document.getElementById('show-register').addEventListener('click', (e) => {
-                e.preventDefault();
-                document.getElementById('login-form').style.display = 'none';
-                document.getElementById('register-form').style.display = 'block';
+            // Check if user is already logged in
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    gameState.currentUser = user;
+                    await loadUserData(user.uid);
+                    
+                    if (gameState.userData) {
+                        screens.auth.classList.remove('active');
+                        screens.welcome.classList.add('active');
+                        document.getElementById('username-display').textContent = gameState.userData.username;
+                        updateBalanceDisplay();
+                    } else {
+                        // If user exists in Auth but not in Firestore, log them out
+                        await auth.signOut();
+                        showToast('User data not found. Please register again.', 'error');
+                    }
+                }
             });
 
-            // Show Login Form
-            document.getElementById('show-login').addEventListener('click', (e) => {
-                e.preventDefault();
-                document.getElementById('register-form').style.display = 'none';
-                document.getElementById('login-form').style.display = 'block';
+            // Auth Tabs
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+                    
+                    tab.classList.add('active');
+                    document.getElementById(`${tab.dataset.tab}-form`).classList.add('active');
+                });
             });
 
-            // Login
-            document.getElementById('login-btn').addEventListener('click', () => {
+            // Login - FIXED VERSION
+            document.getElementById('login-btn').addEventListener('click', async () => {
                 const username = document.getElementById('login-username').value.trim();
-                const password = document.getElementById('login-password').value.trim();
+                const password = document.getElementById('login-password').value;
                 
                 if (!username || !password) {
                     showToast('Please enter username and password', 'error');
                     return;
                 }
                 
-                // Simple authentication (in real app, use server-side auth)
-                if (gameState.users[username]) {
-                    // Note: In a real app, you'd use proper password hashing
-                    loadUserData(username);
-                    showToast(`Welcome back, ${username}!`, 'success');
-                    screens.login.classList.remove('active');
+                try {
+                    const email = `${username}@nova-run.com`;
+                    let userCredential;
+                    
+                    try {
+                        // Try to sign in with Firebase Auth
+                        userCredential = await auth.signInWithEmailAndPassword(email, password);
+                        
+                        // Check if user exists in Firestore
+                        const userDoc = await db.collection('users').doc(userCredential.user.uid).get();
+                        
+                        if (!userDoc.exists) {
+                            // User exists in Auth but not in Firestore - create Firestore record
+                            const uniqueCode = generateUniqueCode();
+                            const newUser = {
+                                uid: userCredential.user.uid,
+                                username: username,
+                                password: password,
+                                balance: 1000, // Give starter balance
+                                uniqueCode: uniqueCode,
+                                codeViewed: false,
+                                accountLocked: false,
+                                joinDate: new Date().toISOString(),
+                                gamesPlayed: 0,
+                                totalWon: 0,
+                                totalLost: 0,
+                                lastLogin: new Date().toISOString()
+                            };
+                            
+                            await db.collection('users').doc(userCredential.user.uid).set(newUser);
+                            gameState.userData = newUser;
+                        } else {
+                            // User exists in both Auth and Firestore
+                            const userData = userDoc.data();
+                            
+                            if (userData.accountLocked) {
+                                showToast('Account is locked. Contact admin.', 'error');
+                                await auth.signOut();
+                                return;
+                            }
+                            
+                            // Update last login
+                            await db.collection('users').doc(userCredential.user.uid).update({
+                                lastLogin: new Date().toISOString()
+                            });
+                            
+                            userData.lastLogin = new Date().toISOString();
+                            gameState.userData = userData;
+                        }
+                        
+                    } catch (authError) {
+                        // If user doesn't exist in Auth, treat as invalid credentials
+                        if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password') {
+                            showToast('Invalid username or password', 'error');
+                            return;
+                        }
+                        throw authError;
+                    }
+                    
+                    // Load user data
+                    gameState.currentUser = userCredential.user;
+                    gameState.balance = gameState.userData.balance || 1000;
+                    gameState.uniqueCode = gameState.userData.uniqueCode;
+                    gameState.codeViewed = gameState.userData.codeViewed || false;
+                    
+                    screens.auth.classList.remove('active');
                     screens.welcome.classList.add('active');
-                } else {
-                    showToast('User not found. Please sign up.', 'error');
+                    document.getElementById('username-display').textContent = gameState.userData.username;
+                    updateBalanceDisplay();
+                    showToast('Login successful!', 'success');
+                    
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showToast('Login failed: ' + error.message, 'error');
                 }
             });
 
-            // Register
-            document.getElementById('register-btn').addEventListener('click', () => {
-                const username = document.getElementById('register-username').value.trim();
-                const password = document.getElementById('register-password').value.trim();
-                const confirmPassword = document.getElementById('register-confirm').value.trim();
+            // Signup - FIXED VERSION
+            document.getElementById('signup-btn').addEventListener('click', async () => {
+                const username = document.getElementById('signup-username').value.trim();
+                const password = document.getElementById('signup-password').value;
+                const confirmPassword = document.getElementById('signup-confirm-password').value;
                 
-                if (!username || !password) {
-                    showToast('Please enter username and password', 'error');
+                if (!username || !password || !confirmPassword) {
+                    showToast('Please fill all fields', 'error');
                     return;
                 }
                 
@@ -1067,98 +959,139 @@
                     return;
                 }
                 
-                if (password.length < 4) {
-                    showToast('Password must be at least 4 characters', 'error');
+                if (password.length < 6) {
+                    showToast('Password must be at least 6 characters', 'error');
                     return;
                 }
                 
-                if (gameState.users[username]) {
-                    showToast('Username already exists', 'error');
+                if (username.length < 3) {
+                    showToast('Username must be at least 3 characters', 'error');
                     return;
                 }
                 
-                // Create new user
-                gameState.users[username] = {
-                    balance: 0,
-                    created: new Date().toISOString(),
-                    lastLogin: new Date().toISOString()
-                };
-                
-                saveUsers();
-                loadUserData(username);
-                
-                showToast(`Account created for ${username}!`, 'success');
-                
-                // Switch to login form
-                document.getElementById('register-form').style.display = 'none';
-                document.getElementById('login-form').style.display = 'block';
-                document.getElementById('register-username').value = '';
-                document.getElementById('register-password').value = '';
-                document.getElementById('register-confirm').value = '';
-                
-                screens.login.classList.remove('active');
-                screens.welcome.classList.add('active');
+                try {
+                    // Check if username already exists in Firestore
+                    const usersSnapshot = await db.collection('users')
+                        .where('username', '==', username)
+                        .limit(1)
+                        .get();
+                    
+                    if (!usersSnapshot.empty) {
+                        showToast('Username already exists', 'error');
+                        return;
+                    }
+                    
+                    // Generate unique code
+                    const uniqueCode = generateUniqueCode();
+                    const email = `${username}@nova-run.com`;
+                    
+                    // Create user in Firebase Auth
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    // Create user in Firestore
+                    const newUser = {
+                        uid: userCredential.user.uid,
+                        username: username,
+                        password: password,
+                        balance: 1000, // Starter balance
+                        uniqueCode: uniqueCode,
+                        codeViewed: false,
+                        accountLocked: false,
+                        joinDate: new Date().toISOString(),
+                        gamesPlayed: 0,
+                        totalWon: 0,
+                        totalLost: 0,
+                        lastLogin: new Date().toISOString()
+                    };
+                    
+                    await db.collection('users').doc(userCredential.user.uid).set(newUser);
+                    
+                    gameState.currentUser = userCredential.user;
+                    gameState.userData = newUser;
+                    gameState.balance = 1000;
+                    gameState.uniqueCode = uniqueCode;
+                    gameState.codeViewed = false;
+                    
+                    screens.auth.classList.remove('active');
+                    screens.welcome.classList.add('active');
+                    document.getElementById('username-display').textContent = username;
+                    updateBalanceDisplay();
+                    
+                    showToast('Account created successfully!', 'success');
+                    showToast(`You received 1000 UGX starting balance!`, 'success');
+                    
+                } catch (error) {
+                    console.error('Signup error:', error);
+                    if (error.code === 'auth/email-already-in-use') {
+                        showToast('Username already exists', 'error');
+                    } else {
+                        showToast('Signup failed: ' + error.message, 'error');
+                    }
+                }
             });
 
             // Logout
-            document.getElementById('logout-btn').addEventListener('click', () => {
-                saveUserData();
-                gameState.currentUser = null;
-                screens.welcome.classList.remove('active');
-                screens.login.classList.add('active');
-                document.getElementById('login-username').value = '';
-                document.getElementById('login-password').value = '';
-                showToast('Logged out successfully', 'success');
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                try {
+                    await auth.signOut();
+                    gameState.currentUser = null;
+                    gameState.userData = null;
+                    gameState.balance = 0;
+                    screens.welcome.classList.remove('active');
+                    screens.auth.classList.add('active');
+                    showToast('Logged out successfully', 'success');
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    showToast('Logout failed', 'error');
+                }
             });
 
-            // Add Money Modal
-            document.getElementById('add-money-btn').addEventListener('click', () => {
-                if (!gameState.currentUser) {
-                    showToast('Please login first', 'error');
+            // View Code Button
+            document.getElementById('view-code-btn').addEventListener('click', () => {
+                document.getElementById('view-code-modal').classList.add('active');
+                document.getElementById('code-display-container').style.display = 'none';
+                document.getElementById('code-password').value = '';
+            });
+
+            // Verify Password for Code
+            document.getElementById('verify-password-btn').addEventListener('click', async () => {
+                const password = document.getElementById('code-password').value;
+                
+                if (!password) {
+                    showToast('Please enter your password', 'error');
                     return;
                 }
-                document.getElementById('add-money-modal').classList.add('active');
-            });
-
-            document.getElementById('cancel-add-money').addEventListener('click', () => {
-                document.getElementById('add-money-modal').classList.remove('active');
-            });
-
-            // Money Options
-            document.querySelectorAll('.money-option').forEach(option => {
-                option.addEventListener('click', () => {
-                    document.querySelectorAll('.money-option').forEach(o => o.classList.remove('selected'));
-                    option.classList.add('selected');
-                    document.getElementById('custom-amount').value = option.dataset.amount;
-                });
-            });
-
-            // Custom Amount
-            document.getElementById('custom-amount').addEventListener('input', (e) => {
-                document.querySelectorAll('.money-option').forEach(o => o.classList.remove('selected'));
-            });
-
-            // Confirm Add Money
-            document.getElementById('confirm-add-money').addEventListener('click', () => {
-                const amount = parseInt(document.getElementById('custom-amount').value);
-                if (amount >= 500) {
-                    gameState.balance += amount;
-                    saveUserData();
-                    updateBalanceDisplay();
-                    showToast(`Successfully added ${amount.toLocaleString()} UGX`, 'success');
-                    document.getElementById('add-money-modal').classList.remove('active');
-                } else {
-                    showToast('Minimum amount is 500 UGX', 'error');
+                
+                try {
+                    if (password === gameState.userData.password) {
+                        // Show code
+                        document.getElementById('unique-code-display').textContent = gameState.uniqueCode;
+                        document.getElementById('code-display-container').style.display = 'block';
+                        
+                        // Mark code as viewed
+                        if (!gameState.codeViewed) {
+                            gameState.codeViewed = true;
+                            await db.collection('users').doc(gameState.currentUser.uid).update({
+                                codeViewed: true
+                            });
+                            gameState.userData.codeViewed = true;
+                        }
+                    } else {
+                        showToast('Incorrect password', 'error');
+                    }
+                } catch (error) {
+                    console.error('Verify password error:', error);
+                    showToast('Failed to verify password', 'error');
                 }
+            });
+
+            // Close Code Modal
+            document.getElementById('close-code-modal').addEventListener('click', () => {
+                document.getElementById('view-code-modal').classList.remove('active');
             });
 
             // Start Game
             document.getElementById('start-game-btn').addEventListener('click', () => {
-                if (!gameState.currentUser) {
-                    showToast('Please login first', 'error');
-                    return;
-                }
-                
                 if (gameState.balance < 500) {
                     showToast('Minimum balance required: 500 UGX', 'error');
                     return;
@@ -1174,7 +1107,6 @@
                     option.classList.add('selected');
                     gameState.selectedRound = parseInt(option.dataset.round);
                     
-                    // Set initial timer display
                     const initialTime = gameState.selectedRound === 1 ? 60 : 120;
                     const minutes = Math.floor(initialTime / 60);
                     const seconds = initialTime % 60;
@@ -1190,7 +1122,7 @@
             });
 
             // Place Bid
-            document.getElementById('place-bid-btn').addEventListener('click', () => {
+            document.getElementById('place-bid-btn').addEventListener('click', async () => {
                 if (!gameState.selectedRound) {
                     showToast('Please select a round first', 'error');
                     return;
@@ -1211,20 +1143,26 @@
 
                 gameState.bidAmount = bidAmount;
                 gameState.balance -= bidAmount;
-                saveUserData();
+                
+                // Update user balance in Firestore
+                try {
+                    await db.collection('users').doc(gameState.currentUser.uid).update({
+                        balance: firebase.firestore.FieldValue.increment(-bidAmount)
+                    });
+                    
+                    gameState.userData.balance = gameState.balance;
+                } catch (error) {
+                    console.error('Update balance error:', error);
+                    showToast('Failed to update balance', 'error');
+                    return;
+                }
+                
                 updateBalanceDisplay();
 
                 // Start game
                 screens.roundSelection.classList.remove('active');
                 screens.game.classList.add('active');
                 startGame();
-            });
-
-            // Mobile Jump Button
-            document.getElementById('mobile-jump-btn').addEventListener('click', () => {
-                if (gameState.gameActive) {
-                    jump();
-                }
             });
 
             // Quit Game
@@ -1249,7 +1187,6 @@
             // Keyboard Controls
             document.addEventListener('keydown', (e) => {
                 if (e.code === 'Space' && gameState.gameActive) {
-                    e.preventDefault();
                     jump();
                 }
             });
@@ -1261,43 +1198,63 @@
                 }
             });
 
-            // Touch controls for mobile
-            canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (gameState.gameActive) {
-                    jump();
-                }
-            });
-
-            // Prevent scrolling on mobile when touching game area
-            document.addEventListener('touchmove', (e) => {
-                if (e.target === canvas || e.target === document.getElementById('mobile-jump-btn')) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
             // Initialize balance display
             updateBalanceDisplay();
         }
 
-        // Game Functions with improved speed progression
-        function startGame() {
+        // Load User Data
+        async function loadUserData(uid) {
+            try {
+                const userDoc = await db.collection('users').doc(uid).get();
+                if (userDoc.exists) {
+                    gameState.userData = userDoc.data();
+                    gameState.balance = gameState.userData.balance || 0;
+                    gameState.uniqueCode = gameState.userData.uniqueCode;
+                    gameState.codeViewed = gameState.userData.codeViewed || false;
+                } else {
+                    return null;
+                }
+            } catch (error) {
+                console.error('Load user data error:', error);
+                showToast('Failed to load user data', 'error');
+                return null;
+            }
+        }
+
+        // Game Functions
+        async function startGame() {
             gameState.gameActive = true;
             gameState.roundTime = 0;
             gameState.targetTime = gameState.selectedRound === 1 ? 60000 : 120000;
             
+            // Get game difficulty code
+            const gameCode = await getGameDifficultyCode();
+            document.getElementById('game-code-display').textContent = `Game Code: ${gameCode}`;
+            
+            // Adjust game difficulty based on code
+            if (gameCode === '00HQJ') {
+                gameSpeed = 7; // Hard
+            } else if (gameCode === '00MQJ') {
+                gameSpeed = 5; // Medium
+            } else {
+                gameSpeed = 3; // Easy
+            }
+            
+            // Reset game objects
             runner.y = GROUND_LEVEL - runner.height;
             runner.velocityY = 0;
             obstacles = [];
-            gameSpeed = 5; // Start at base speed
             obstacleTimer = 0;
             
+            // Update UI
             document.getElementById('game-balance').textContent = gameState.balance.toLocaleString() + ' UGX';
             document.getElementById('current-bid').textContent = gameState.bidAmount.toLocaleString() + ' UGX';
             
+            // Start game loop
             lastTime = Date.now();
             requestAnimationFrame(gameLoop);
             
+            // Start round timer
             if (gameState.roundTimer) {
                 clearInterval(gameState.roundTimer);
             }
@@ -1335,6 +1292,7 @@
         }
 
         function update(deltaTime) {
+            // Update runner physics
             runner.velocityY += runner.gravity;
             runner.y += runner.velocityY;
             
@@ -1346,22 +1304,13 @@
                 runner.grounded = false;
             }
             
-            // IMPROVED: Smoother speed progression that doesn't get too fast
+            // Increase game speed over time
             const progress = gameState.roundTime / gameState.targetTime;
+            gameSpeed = 5 + progress * 10; // Start from base speed
             
-            // Use easing function for smoother progression
-            // Ease-out cubic: https://easings.net/#easeOutCubic
-            const easedProgress = 1 - Math.pow(1 - progress, 3);
-            
-            // Maximum speed is now 10 (instead of 20) for better playability
-            gameSpeed = 5 + (easedProgress * 5); // Slower progression: from 5 to 10 max
-            
+            // Generate obstacles
             obstacleTimer += deltaTime;
-            
-            // IMPROVED: More reasonable obstacle intervals
-            // Minimum interval is now 600ms (instead of 800ms) for better pacing
-            // Maximum interval is 2500ms
-            const obstacleInterval = Math.max(600, 2500 - (easedProgress * 1900));
+            const obstacleInterval = Math.max(800, 2000 - (progress * 1500));
             
             if (obstacleTimer > obstacleInterval) {
                 obstacleTimer = 0;
@@ -1372,21 +1321,7 @@
                     { width: 40, height: 100, color: '#B91C1C' }
                 ];
                 
-                // Weight the obstacles - more small ones early, more large ones late
-                let obstacleTypeIndex;
-                if (progress < 0.3) {
-                    // Early game: mostly small obstacles (70% small, 30% medium)
-                    obstacleTypeIndex = Math.random() < 0.7 ? 0 : 1;
-                } else if (progress < 0.7) {
-                    // Mid game: mix of all types
-                    obstacleTypeIndex = Math.floor(Math.random() * obstacleTypes.length);
-                } else {
-                    // Late game: fewer small obstacles (20% small, 40% medium, 40% large)
-                    const rand = Math.random();
-                    obstacleTypeIndex = rand < 0.2 ? 0 : rand < 0.6 ? 1 : 2;
-                }
-                
-                const type = obstacleTypes[obstacleTypeIndex];
+                const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
                 
                 obstacles.push({
                     x: canvas.width,
@@ -1395,11 +1330,12 @@
                     height: type.height,
                     speed: gameSpeed,
                     color: type.color,
-                    type: obstacleTypeIndex === 0 ? 'small' : 
-                          obstacleTypeIndex === 1 ? 'medium' : 'large'
+                    type: type === obstacleTypes[0] ? 'small' : 
+                          type === obstacleTypes[1] ? 'medium' : 'large'
                 });
             }
             
+            // Update obstacles
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obs = obstacles[i];
                 obs.x -= obs.speed;
@@ -1499,7 +1435,7 @@
                    rect1.y + rect1.height > rect2.y;
         }
 
-        function endGame(isWin) {
+        async function endGame(isWin) {
             gameState.gameActive = false;
             
             if (gameState.roundTimer) {
@@ -1507,35 +1443,93 @@
                 gameState.roundTimer = null;
             }
             
-            let winnings = 0;
-            if (isWin) {
-                const multiplier = gameState.selectedRound === 1 ? 2 : 2.5;
-                winnings = Math.floor(gameState.bidAmount * multiplier);
-                gameState.balance += winnings;
+            try {
+                if (isWin) {
+                    const multiplier = gameState.selectedRound === 1 ? 2 : 2.5;
+                    const winnings = Math.floor(gameState.bidAmount * multiplier);
+                    gameState.balance += winnings;
+                    
+                    // Update user data in Firestore
+                    await db.collection('users').doc(gameState.currentUser.uid).update({
+                        balance: firebase.firestore.FieldValue.increment(winnings),
+                        totalWon: firebase.firestore.FieldValue.increment(winnings),
+                        gamesPlayed: firebase.firestore.FieldValue.increment(1),
+                        lastLogin: new Date().toISOString()
+                    });
+                    
+                    gameState.userData.balance += winnings;
+                    gameState.userData.totalWon = (gameState.userData.totalWon || 0) + winnings;
+                    gameState.userData.gamesPlayed = (gameState.userData.gamesPlayed || 0) + 1;
+                    
+                    // Save game history
+                    await db.collection('gameHistory').add({
+                        userId: gameState.currentUser.uid,
+                        username: gameState.userData.username,
+                        timestamp: new Date().toISOString(),
+                        bidAmount: gameState.bidAmount,
+                        winnings: winnings,
+                        result: 'win',
+                        round: gameState.selectedRound,
+                        gameCode: document.getElementById('game-code-display').textContent.split(': ')[1]
+                    });
+                    
+                    document.getElementById('result-icon').innerHTML = '<i class="fas fa-trophy"></i>';
+                    document.getElementById('result-icon').className = 'result-icon win';
+                    document.getElementById('result-title').textContent = 'VICTORY!';
+                    document.getElementById('result-title').style.color = '#10b981';
+                } else {
+                    // Update user data for loss
+                    await db.collection('users').doc(gameState.currentUser.uid).update({
+                        totalLost: firebase.firestore.FieldValue.increment(gameState.bidAmount),
+                        gamesPlayed: firebase.firestore.FieldValue.increment(1),
+                        lastLogin: new Date().toISOString()
+                    });
+                    
+                    gameState.userData.totalLost = (gameState.userData.totalLost || 0) + gameState.bidAmount;
+                    gameState.userData.gamesPlayed = (gameState.userData.gamesPlayed || 0) + 1;
+                    
+                    // Save game history
+                    await db.collection('gameHistory').add({
+                        userId: gameState.currentUser.uid,
+                        username: gameState.userData.username,
+                        timestamp: new Date().toISOString(),
+                        bidAmount: gameState.bidAmount,
+                        winnings: 0,
+                        result: 'loss',
+                        round: gameState.selectedRound,
+                        gameCode: document.getElementById('game-code-display').textContent.split(': ')[1]
+                    });
+                    
+                    document.getElementById('result-icon').innerHTML = '<i class="fas fa-times"></i>';
+                    document.getElementById('result-icon').className = 'result-icon lose';
+                    document.getElementById('result-title').textContent = 'GAME OVER';
+                    document.getElementById('result-title').style.color = '#ef4444';
+                }
                 
-                document.getElementById('result-icon').innerHTML = '<i class="fas fa-trophy"></i>';
-                document.getElementById('result-icon').className = 'result-icon win';
-                document.getElementById('result-title').textContent = 'VICTORY!';
-                document.getElementById('result-title').style.color = '#10b981';
-            } else {
-                document.getElementById('result-icon').innerHTML = '<i class="fas fa-times"></i>';
-                document.getElementById('result-icon').className = 'result-icon lose';
-                document.getElementById('result-title').textContent = 'GAME OVER';
-                document.getElementById('result-title').style.color = '#ef4444';
+                // Update result screen
+                document.getElementById('result-bid').textContent = gameState.bidAmount.toLocaleString() + ' UGX';
+                document.getElementById('result-multiplier').textContent = 
+                    gameState.selectedRound === 1 ? '×2' : '×2.5';
+                
+                if (isWin) {
+                    const multiplier = gameState.selectedRound === 1 ? 2 : 2.5;
+                    const winnings = Math.floor(gameState.bidAmount * multiplier);
+                    document.getElementById('result-winnings').textContent = winnings.toLocaleString() + ' UGX';
+                } else {
+                    document.getElementById('result-winnings').textContent = '0 UGX';
+                }
+                
+                document.getElementById('result-new-balance').textContent = gameState.balance.toLocaleString() + ' UGX';
+                
+                updateBalanceDisplay();
+                
+                screens.game.classList.remove('active');
+                screens.result.classList.add('active');
+                
+            } catch (error) {
+                console.error('End game error:', error);
+                showToast('Failed to save game result', 'error');
             }
-            
-            saveUserData();
-            
-            document.getElementById('result-bid').textContent = gameState.bidAmount.toLocaleString() + ' UGX';
-            document.getElementById('result-multiplier').textContent = 
-                gameState.selectedRound === 1 ? '×2' : '×2.5';
-            document.getElementById('result-winnings').textContent = isWin ? winnings.toLocaleString() + ' UGX' : '0 UGX';
-            document.getElementById('result-new-balance').textContent = gameState.balance.toLocaleString() + ' UGX';
-            
-            updateBalanceDisplay();
-            
-            screens.game.classList.remove('active');
-            screens.result.classList.add('active');
         }
 
         function updateBalanceDisplay() {
@@ -1546,6 +1540,17 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                background: ${type === 'error' ? '#ef4444' : '#10b981'};
+                color: white;
+                border-radius: 10px;
+                z-index: 1001;
+                animation: slideIn 0.3s ease;
+            `;
             
             document.body.appendChild(toast);
             
